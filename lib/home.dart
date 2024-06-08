@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:dio/dio.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -10,57 +10,38 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  TextEditingController nimController = TextEditingController();
+  TextEditingController jurusanController = TextEditingController();
   TextEditingController namaController = TextEditingController();
-  late dynamic db = null;
-  List<Map<String, Object?>> mahasiswa = [];
+  List<dynamic> mahasiswa = [];
+  final dio = Dio();
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    setupDatabase();
-  }
-
-  void setupDatabase() async {
-    final database = openDatabase(
-      join(await getDatabasesPath(), 'mahasiswa_db.db'),
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE mahasiswa(id INTEGER PRIMARY KEY, nama TEXT, nim TEXT)',
-        );
-      },
-      version: 1,
-    );
-    db = await database;
-
     retrieve();
   }
 
   void save() async {
-    await db.insert(
-      'mahasiswa',
-      {"nama": namaController.text, "nim": nimController.text},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    Response response =
+        await dio.post("http://192.168.8.230:8000/api/mahasiswa", data: {
+      "nama": namaController.text,
+      "jurusan": jurusanController.text,
+    });
     retrieve();
   }
 
   void retrieve() async {
-    final List<Map<String, Object?>> mahasiswa = await db.query('mahasiswa');
+    Response response =
+        await dio.get("http://192.168.8.230:8000/api/mahasiswa");
     setState(() {
-      this.mahasiswa = mahasiswa;
+      this.mahasiswa = response.data;
     });
   }
 
   void deleteRow(id) async {
-    await db.delete(
-      'mahasiswa',
-      // Use a `where` clause to delete a specific dog.
-      where: 'id = ?',
-      // Pass the Dog's id as a whereArg to prevent SQL injection.
-      whereArgs: [id],
-    );
+    Response response =
+        await dio.delete("http://192.168.8.230:8000/api/mahasiswa/${id}");
     retrieve();
   }
 
@@ -75,9 +56,9 @@ class _HomeState extends State<Home> {
         child: Column(
           children: [
             TextField(
-              controller: nimController,
+              controller: jurusanController,
               decoration: const InputDecoration(
-                label: Text("NIM"),
+                label: Text("Jurusan"),
               ),
             ),
             TextField(
@@ -105,7 +86,7 @@ class _HomeState extends State<Home> {
                         label: Text('Nama'),
                       ),
                       DataColumn(
-                        label: Text('Nim'),
+                        label: Text('Jurusan'),
                       ),
                       DataColumn(
                         label: Text('Action'),
@@ -117,7 +98,7 @@ class _HomeState extends State<Home> {
                             cells: [
                               DataCell(
                                 Text(
-                                  e['nim'].toString(),
+                                  e['jurusan'].toString(),
                                 ),
                               ),
                               DataCell(
