@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:dio/dio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -14,6 +15,7 @@ class _HomeState extends State<Home> {
   TextEditingController namaController = TextEditingController();
   List<dynamic> mahasiswa = [];
   final dio = Dio();
+  final supabase = Supabase.instance.client;
 
   @override
   void initState() {
@@ -23,25 +25,20 @@ class _HomeState extends State<Home> {
   }
 
   void save() async {
-    Response response =
-        await dio.post("http://192.168.8.230:8000/api/mahasiswa", data: {
-      "nama": namaController.text,
-      "jurusan": jurusanController.text,
-    });
+    await supabase.from('mahasiswa').insert(
+        {'nama': namaController.text, 'jurusan': jurusanController.text});
     retrieve();
   }
 
   void retrieve() async {
-    Response response =
-        await dio.get("http://192.168.8.230:8000/api/mahasiswa");
+    final data = await supabase.from('mahasiswa').select('*');
     setState(() {
-      this.mahasiswa = response.data;
+      this.mahasiswa = data;
     });
   }
 
   void deleteRow(id) async {
-    Response response =
-        await dio.delete("http://192.168.8.230:8000/api/mahasiswa/${id}");
+    await supabase.from('mahasiswa').delete().eq('id', id);
     retrieve();
   }
 
@@ -98,12 +95,12 @@ class _HomeState extends State<Home> {
                             cells: [
                               DataCell(
                                 Text(
-                                  e['jurusan'].toString(),
+                                  e['nama'].toString(),
                                 ),
                               ),
                               DataCell(
                                 Text(
-                                  e['nama'].toString(),
+                                  e['jurusan'].toString(),
                                 ),
                               ),
                               DataCell(
